@@ -105,7 +105,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Extract metadata (tags, labels) for Events
-        id: meta-proxy
+        id: meta-events
         uses: docker/metadata-action@v4
         with:
           images: ${{ env.REGISTRY }}/${{ env.EVENTS_SERVICE_IMAGE_NAME }}
