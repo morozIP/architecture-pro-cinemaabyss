@@ -4,15 +4,25 @@ metadata:
   name: cinemaabyss-ingress
   namespace: cinemaabyss
   annotations:
+    # Указываем, что будем использовать Nginx Ingress Controller
     kubernetes.io/ingress.class: "nginx"
+    # Отключаем редирект с HTTP на HTTPS (для простоты локального тестирования)
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
 spec:
   rules:
     - host: cinemaabyss.example.com
       http:
         paths:
-          #дополните конфигурацию для /
-          ...
+          # 1. КОРНЕВОЙ ПУТЬ (должен идти на API Gateway/Proxy Service)
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: proxy-service # Service Name: proxy-service (работает на порту 8000)
+                port:
+                  number: 8000
+
+          # 2. EVENTS SERVICE
           - path: /api/events
             pathType: Prefix
             backend:
@@ -20,3 +30,29 @@ spec:
                 name: events-service
                 port:
                   number: 8082
+
+          # 3. MONOLITH SERVICE (Users, Payments, Subscriptions)
+          # Используем service: monolith, который работает на порту 8080
+          - path: /api/payments
+            pathType: Prefix
+            backend:
+              service:
+                name: monolith
+                port:
+                  number: 8080
+
+          - path: /api/subscriptions
+            pathType: Prefix
+            backend:
+              service:
+                name: monolith
+                port:
+                  number: 8080
+
+          - path: /api/users
+            pathType: Prefix
+            backend:
+              service:
+                name: monolith
+                port:
+                  number: 8080

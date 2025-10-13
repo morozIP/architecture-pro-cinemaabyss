@@ -1,0 +1,81 @@
+﻿apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: circuit-breaker-rules
+  namespace: cinemaabyss
+spec:
+  host: proxy-service
+  trafficPolicy:
+    connectionPool:
+      http:
+        http1MaxPendingRequests: 10
+        maxRequestsPerConnection: 100
+        maxRetries: 3
+      tcp:
+        maxConnections: 100
+        connectTimeout: 5s
+    outlierDetection:
+      consecutiveErrors: 5
+      interval: 30s
+      baseEjectionTime: 60s
+      maxEjectionPercent: 50
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: monolith-circuit-breaker
+  namespace: cinemaabyss
+spec:
+  host: monolith
+  trafficPolicy:
+    connectionPool:
+      http:
+        http1MaxPendingRequests: 15
+        maxRequestsPerConnection: 100
+      tcp:
+        maxConnections: 100
+    outlierDetection:
+      consecutive5xxErrors: 7
+      interval: 30s
+      baseEjectionTime: 90s
+      maxEjectionPercent: 50
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: movies-service-circuit-breaker
+  namespace: cinemaabyss
+spec:
+  host: movies-service
+  trafficPolicy:
+    connectionPool:
+      http:
+        http1MaxPendingRequests: 15
+        maxRequestsPerConnection: 100
+      tcp:
+        maxConnections: 100
+    outlierDetection:
+      consecutive5xxErrors: 5
+      interval: 30s
+      baseEjectionTime: 60s
+      maxEjectionPercent: 50
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: events-service-circuit-breaker
+  namespace: cinemaabyss
+spec:
+  host: events-service
+  trafficPolicy:
+    connectionPool:
+      http:
+        http1MaxPendingRequests: 15
+        maxRequestsPerConnection: 100
+      tcp:
+        maxConnections: 100
+    outlierDetection:
+      consecutive5xxErrors: 5
+      interval: 30s
+      baseEjectionTime: 60s
+      maxEjectionPercent: 50
