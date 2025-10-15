@@ -24,8 +24,51 @@ spec:
         app: proxy-service
     spec:
       containers:
-      - name: proxy-service
-        ..... тут
+        - name: proxy-service
+          image: {{ .Values.proxyService.image.repository }}:{{ .Values.proxyService.image.tag }}
+          imagePullPolicy: {{ .Values.proxyService.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.proxyService.service.targetPort }}
+          env:
+            - name: PORT
+              value: "{{ .Values.proxyService.service.targetPort }}"
+            - name: DB_CONNECTION_STRING
+              value: "postgres://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=disable"
+            - name: MONOLITH_URL
+              # Правильное имя Service в K8s: monolith
+              value: {{ .Values.proxyService.env.monolithUrl | quote }}
+            - name: MOVIES_SERVICE_URL
+              # Правильное имя Service в K8s: movies-service
+              value: {{ .Values.proxyService.env.moviesServiceUrl | quote }}
+            - name: EVENTS_SERVICE_URL
+              # Правильное имя Service в K8s: events-service
+              value: {{ .Values.proxyService.env.eventsServiceUrl | quote }}
+            - name: GRADUAL_MIGRATION
+              value: {{ .Values.proxyService.env.gradualMigration | quote }}
+            - name: MOVIES_MIGRATION_PERCENT
+              value: {{ .Values.proxyService.env.moviesMigrationPercent | quote }}
+          envFrom:
+            - configMapRef:
+                name: cinemaabyss-config
+            - secretRef:
+                name: cinemaabyss-secrets
+          resources:
+            {{- toYaml .Values.proxyService.resources | nindent 10 }}
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.proxyService.service.targetPort }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.proxyService.service.targetPort }}
+            initialDelaySeconds: 15
+            periodSeconds: 20
+      restartPolicy: Always
+      imagePullSecrets:
+        - name: dockerconfigjson
 ---
 apiVersion: v1
 kind: Service
@@ -38,5 +81,9 @@ metadata:
     app.kubernetes.io/instance: {{ .Release.Name }}
 spec:
   selector:
-    ... и тут
+    app: proxy-service
+  ports:
+    - port: {{ .Values.proxyService.service.port }}
+      targetPort: {{ .Values.proxyService.service.targetPort }}
+  type: {{ .Values.proxyService.service.type }}
 {{- end }}
